@@ -19,7 +19,7 @@ module params
   real(dp)::dt = 1.0d-3 ! time slice
 
   integer,parameter::is_fluid=1,is_wall=2,is_dummy=3
-  integer,dimension(ndims)::nparticles_fluid = (/8, 16,16/)
+  integer,dimension(ndims)::nparticles_fluid = (/4, 16,16/)
   integer,dimension(ndims)::nparticles_box   = (/16,16,16/)
   integer,dimension(ndims)::thick_wall  = (/2,2,2/)
   integer,dimension(ndims)::thick_dummy = (/2,2,2/)
@@ -100,6 +100,7 @@ contains
     particles%acc(:,:)         = 0.0d0
     particles%ndensity(:)      = 0.0d0
     particles%pressure(:)      = 0.0d0
+    particles%min_pressure(:)  = 0.0d0
     particles%source(:)        = 0.0d0
     particles%is_surface(:)    = .false.
     particles%particle_type(:) = 0
@@ -377,7 +378,7 @@ contains
     real(dp),dimension(nparticles)::visc
 
     do n=1,ndims
-       call calc_laplacian(particles%vel(1,n),visc(1),'v')
+       call calc_laplacian(particles%vel(1,n),visc,'v')
        do i=1,nparticles
           if (particles%particle_type(i).ne.is_fluid) cycle
           particles%acc(i,n) = particles%acc(i,n) + nu*visc(i)
@@ -426,7 +427,7 @@ contains
        if (particles%particle_type(i).eq.is_dummy) cycle
        particles%min_pressure(i) = particles%pressure(i)
        do j=1,nparticles
-          if (i.eq.j.or.distance(i,j).ge.re_grad) cycle
+          if (i.eq.j.or.particles%particle_type(j).eq.is_dummy.or.distance(i,j).ge.re_grad) cycle
           if (particles%min_pressure(i).gt.particles%pressure(j)) then
              particles%min_pressure(i) = particles%pressure(j)
           end if
@@ -640,7 +641,7 @@ contains
        call calc_viscosity()
        call move_particles()
        ! collision() is still under testing
-       !  call collision()
+       call collision()
        call calc_pressure()
        call move_particles_by_pressure()
        if (mod(tstep,tstep_max/freq_write).eq.0) then
@@ -672,24 +673,22 @@ contains
           vel_tmp(n) = particles%vel(i,n)
        end do
        do j=1,nparticles
-          if (i.eq.j) cycle
-          if (distance(i,j).lt.dist_col) then
-             fdt = 0.0d0
+          if (i.eq.j.or.distance(i,j).ge.dist_col) cycle
+          fdt = 0.0d0
+          do n=1,ndims
+             fdt = fdt + (particles%vel(i,n)-particles%vel(j,n))*(particles%pos(j,n)-particles%pos(i,n))/distance(i,j)
+          end do
+          if (fdt.gt.0.0d0) then
+             fdt = fdt*(1.0d0+coef_restitution)*rho/2.0d0
              do n=1,ndims
-                fdt = fdt + (vel_tmp(n)-particles%vel(j,n))*(particles%pos(j,n)-particles%pos(i,n))/distance(i,j)
+                vel_tmp(n) = vel_tmp(n) - fdt/rho*(particles%pos(j,n)-particles%pos(i,n))/distance(i,j)
              end do
-             if (fdt.gt.0.0d0) then
-                fdt = fdt*(1.0d0+coef_restitution)*rho/2.0d0
-                do n=1,ndims
-                   vel_tmp(n) = vel_tmp(n) - fdt/rho*(particles%pos(j,n)-particles%pos(i,n))/distance(i,j)
-                end do
-             end if
-#ifdef _DEBUG
-             if (j.gt.i) then
-                write(6,"(a,i0,a,i0,a,1pe14.5)") "collision occurred between ",i," and ",j," , distance:",distance(i,j)
-             end if
-#endif
           end if
+#ifdef _DEBUG
+          if (j.gt.i) then
+             write(6,"(a,i0,a,i0,a,1pe14.5)") "collision occurred between ",i," and ",j,", distance:",distance(i,j)
+          end if
+#endif
        end do
        do n=1,ndims
           vel_after_col(i,n) = vel_tmp(n)
@@ -699,7 +698,7 @@ contains
     do i=1,nparticles
        if (particles%particle_type(i).ne.is_fluid) cycle
        do n=1,ndims
-          particles%pos(i,n) = particles%pos(i,n)-vel_after_col(i,n)-particles%vel(i,n)*dt
+          particles%pos(i,n) = particles%pos(i,n)+(vel_after_col(i,n)-particles%vel(i,n))*dt
           particles%vel(i,n) = vel_after_col(i,n)
        end do
     end do
@@ -775,12 +774,16 @@ program main
   use params
   use mysubs
   implicit none
+  real(dp)::dclock,time,t0
 
   call calc_nparticles()
   call allocate_arrays()
   call set_initial_state()
   call calc_n0_and_lambda()
+  t0 = dclock()
   call mps()
+  time = dclock() - t0
+  write(6,*) "time[s]:", time
 !  call debug()
   call free_arrays()
   
