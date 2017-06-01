@@ -19,8 +19,8 @@ module params
   real(dp)::dt = 1.0d-3 ! time slice
 
   integer,parameter::is_fluid=1,is_wall=2,is_dummy=3
-  integer,dimension(ndims)::nparticles_fluid = (/4, 16,16/)
-  integer,dimension(ndims)::nparticles_box   = (/16,16,16/)
+  integer,dimension(ndims)::nparticles_fluid = (/8, 16,16/)
+  integer,dimension(ndims)::nparticles_box   = (/32,16,16/)
   integer,dimension(ndims)::thick_wall  = (/2,2,2/)
   integer,dimension(ndims)::thick_dummy = (/2,2,2/)
 
@@ -38,7 +38,7 @@ module params
   real(dp),parameter::re_grad  = dist_particles*2.1d0 ! effective radius for gradient
   real(dp),parameter::re_lap   = dist_particles*3.1d0 ! effective radius for laplacian
 
-  real(dp),parameter::g = 9.8065d0 ! gravity constant
+  real(dp),parameter::g = -9.8065d0 ! gravity constant
 
   integer::nparticles
   
@@ -53,8 +53,8 @@ module params
   real(dp)::tol = 1.0d-30 ! CG method tolerance
 
 
-  integer::tstep_max  = 100
-  integer::freq_write = 100
+  integer::tstep_max  = 200
+  integer::freq_write = 200
   
   type particle
      real(dp),allocatable,dimension(:,:)::pos,vel,acc
@@ -285,7 +285,6 @@ contains
        do j=1,nparticles
           if (i.eq.j.or.distance(i,j).ge.re_nd) cycle
           particles%ndensity(i) = particles%ndensity(i) + weight(distance(i,j),re_nd)
-          myassert(particles%ndensity(i), "in calc_ndensity()")
        end do
     end do
     
@@ -321,6 +320,7 @@ contains
     implicit none
     integer::i
 
+    particles%acc(:,:) = 0.0d0
     do i=1,nparticles
        if (particles%particle_type(i).eq.is_fluid) then
           particles%acc(i,3) = g ! z direction
@@ -354,8 +354,9 @@ contains
     else if (type.eq.'p') then ! for pressure calculation
        do i=1,nparticles
           ! presure is zero on the surface
-          ! this cycle is mandatory for having positive definite matrix
-          if (particles%is_surface(i)) cycle
+          ! if (particles%is_surface(i)) cycle is mandatory for having positive definite matrix
+          
+          if (particles%is_surface(i).or.particles%particle_type(i).eq.is_dummy) cycle
           do j=1,nparticles
              if (i.eq.j.or.distance(j,i).gt.re_lap.or.particles%particle_type(i).eq.is_dummy) cycle
              out(i) = out(i) + coef*(in(j)-in(i))*weight(distance(j,i),re_lap)
@@ -392,11 +393,12 @@ contains
     implicit none
     integer::i,n
 
-    do n=1,ndims
-       do i=1,nparticles
+    do i=1,nparticles
+       do n=1,ndims
           if (particles%particle_type(i).eq.is_fluid) then
              particles%vel(i,n) = particles%vel(i,n) + particles%acc(i,n)*dt
              particles%pos(i,n) = particles%pos(i,n) + particles%vel(i,n)*dt
+             ! particles%pos(i,n) = particles%pos(i,n) + particles%acc(i,n)*(dt**2)
           end if
           particles%acc(i,n) = 0.0d0
        end do
@@ -563,8 +565,9 @@ contains
        if (mod(iter,10).eq.0) then
           write(6,"(a,i6,1pe14.5)") "iter,eps:",iter,eps
        end if
-    end do
 #endif
+    end do
+
     ! converged
     particles%pressure(:) = x_new(:)
     
@@ -575,6 +578,7 @@ contains
     implicit none
     integer::i
 
+    particles%is_surface(:) = .false.
     do i=1,nparticles
        if (particles%ndensity(i)/n0_nd.lt.thre_nd) then
           particles%is_surface(i) = .true.
@@ -597,7 +601,6 @@ contains
        else
           particles%source(i) = relax_pressure*1.0d0/(dt**2)*(particles%ndensity(i)-n0_nd)/n0_nd
        end if
-       myassert(particles%source(i), "in check_surface()")
     end do
   end subroutine calc_source
 
@@ -640,7 +643,6 @@ contains
        call calc_gravity()
        call calc_viscosity()
        call move_particles()
-       ! collision() is still under testing
        call collision()
        call calc_pressure()
        call move_particles_by_pressure()
@@ -728,7 +730,7 @@ contains
    ! corrected gradient model, use minimum pressure in the effective radius
    ! this guarantees threre is no negative pressure
    call calc_gradient(particles%pressure,particles%min_pressure,grad_pres)
-
+   
    do i=1,nparticles
       do n=1,ndims
          if (particles%particle_type(i).ne.is_fluid) cycle
@@ -740,8 +742,8 @@ contains
       do n=1,ndims
          if (particles%particle_type(i).eq.is_fluid) then
             particles%vel(i,n) = particles%vel(i,n) + particles%acc(i,n)*dt
-            !  particles%pos(i,n) = particles%pos(i,n) + particles%acc(i,n)*dt*dt
-            particles%pos(i,n) = particles%pos(i,n) + particles%vel(i,n)*dt
+            particles%pos(i,n) = particles%pos(i,n) + particles%acc(i,n)*(dt**2)
+            ! particles%pos(i,n) = particles%pos(i,n) + particles%vel(i,n)*dt
          end if
          particles%acc(i,n) = 0.0d0
       end do
