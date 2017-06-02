@@ -16,5 +16,5 @@ TODO:
 - parallelization by OpenMP, MPI  
 
 ---
-water collapse
+water collapse in a box.
 ![Alt text](./water_collapse.gif?raw=true "water collapse")
