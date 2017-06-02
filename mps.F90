@@ -228,48 +228,48 @@ contains
     use params
     implicit none
     integer::i
-    integer::n_center
+    integer::n_fluid1
 
     n0_nd   = 0.0d0
     n0_grad = 0.0d0
     n0_lap  = 0.0d0
     lambda  = 0.0d0
 
-    n_center = find_fluid_center()
+    n_fluid1 = find_fluid_start()
+#ifdef _DEBUG    
+    write(6,*) "n_fluid1:",n_fluid1
+#endif
+
     
     ! need to choose a particle that is located almost of center of the fluid, not to have low density
     do i=1,nparticles
-       if (i.ne.n_center) then
-          n0_nd   = n0_nd   + weight(distance(i,n_center),re_nd)
-          n0_grad = n0_grad + weight(distance(i,n_center),re_grad)
-          n0_lap  = n0_lap  + weight(distance(i,n_center),re_lap)
-          lambda  = lambda  + (distance(i,n_center)**2)*weight(distance(i,n_center),re_lap)
-       end if
+       if (i.eq.n_fluid1) cycle
+       n0_nd   = n0_nd   + weight(distance(i,n_fluid1),re_nd)
+       n0_grad = n0_grad + weight(distance(i,n_fluid1),re_grad)
+       n0_lap  = n0_lap  + weight(distance(i,n_fluid1),re_lap)
+       lambda  = lambda  + (distance(i,n_fluid1)**2)*weight(distance(i,n_fluid1),re_lap)
     end do
     lambda = lambda/n0_lap
 
     write(6,"(a,4(1pe14.5))") "n0_nd,n0_grad,n0_lap,lambda:",n0_nd,n0_grad,n0_lap,lambda
     
   end subroutine calc_n0_and_lambda
-     
-  function find_fluid_center() result(res)
+
+  ! find the position of the first fluid particle
+  ! it is located in dence position because of the corner
+  function find_fluid_start() result(res)
     use params
     implicit none
     integer::res
-    integer::i,count
-
+    integer::i
     res   = 0
-    count = 1
     do i=1,nparticles
        if (particles%particle_type(i).eq.is_fluid) then
-          if (count.eq.nparticles_fluid(1)*nparticles_fluid(2)*nparticles_fluid(3)/2) then
-             exit
-          end if
-          count = count + 1
+          exit
        end if
     end do
     res = i
-  end function find_fluid_center
+  end function find_fluid_start
 
   subroutine calc_ndensity()
     use params
@@ -356,9 +356,9 @@ contains
           ! presure is zero on the surface
           ! if (particles%is_surface(i)) cycle is mandatory for having positive definite matrix
           
-          if (particles%is_surface(i).or.particles%particle_type(i).eq.is_dummy) cycle
+          if (particles%is_surface(i)) cycle
           do j=1,nparticles
-             if (i.eq.j.or.distance(j,i).gt.re_lap.or.particles%particle_type(i).eq.is_dummy) cycle
+             if (i.eq.j.or.distance(j,i).ge.re_lap.or.particles%particle_type(i).eq.is_dummy) cycle
              out(i) = out(i) + coef*(in(j)-in(i))*weight(distance(j,i),re_lap)
           end do
        end do
@@ -376,13 +376,16 @@ contains
     use params
     implicit none
     integer::i,n
-    real(dp),dimension(nparticles)::visc
+    real(dp),dimension(nparticles,ndims)::visc
 
     do n=1,ndims
-       call calc_laplacian(particles%vel(1,n),visc,'v')
-       do i=1,nparticles
-          if (particles%particle_type(i).ne.is_fluid) cycle
-          particles%acc(i,n) = particles%acc(i,n) + nu*visc(i)
+       call calc_laplacian(particles%vel(1,n),visc(1,n),'v')
+    end do
+
+    do i=1,nparticles
+       if (particles%particle_type(i).ne.is_fluid) cycle
+       do n=1,ndims
+          particles%acc(i,n) = particles%acc(i,n) + nu*visc(i,n)
        end do
     end do
 
@@ -413,7 +416,7 @@ contains
     call calc_ndensity()
     call check_surface()
     call calc_source()
-    ! solve -1/rho*laplacian(p) = source
+    ! solve -1/rho*laplacian(p) = source for p
     call cg()
     call remove_negative_pressure()
     call calc_min_pressure()
@@ -580,7 +583,7 @@ contains
 
     particles%is_surface(:) = .false.
     do i=1,nparticles
-       if (particles%ndensity(i)/n0_nd.lt.thre_nd) then
+       if (particles%ndensity(i)/n0_nd.lt.thre_nd.and.particles%particle_type(i).ne.is_dummy) then
           particles%is_surface(i) = .true.
        end if
     end do
@@ -592,6 +595,7 @@ contains
     implicit none
     integer::i
 
+    particles%source(:) = 0.0d0
     do i=1,nparticles
        ! dummy is excluded here
        if (particles%particle_type(i).eq.is_dummy) cycle
