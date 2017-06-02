@@ -16,7 +16,7 @@ module params
   integer,parameter::ndims = 3
   integer,parameter::dp = kind(1.0d0)
 
-  real(dp)::dt = 1.0d-3 ! time slice
+  real(dp)::dt = 3.0d-3 ! time slice
 
   integer,parameter::is_fluid=1,is_wall=2,is_dummy=3
   integer,dimension(ndims)::nparticles_fluid = (/8, 16,16/)
@@ -240,7 +240,6 @@ contains
     write(6,*) "n_fluid1:",n_fluid1
 #endif
 
-    
     ! need to choose a particle that is located almost of center of the fluid, not to have low density
     do i=1,nparticles
        if (i.eq.n_fluid1) cycle
@@ -250,9 +249,9 @@ contains
        lambda  = lambda  + (distance(i,n_fluid1)**2)*weight(distance(i,n_fluid1),re_lap)
     end do
     lambda = lambda/n0_lap
-
+#ifdef _DEBUG
     write(6,"(a,4(1pe14.5))") "n0_nd,n0_grad,n0_lap,lambda:",n0_nd,n0_grad,n0_lap,lambda
-    
+#endif
   end subroutine calc_n0_and_lambda
 
   ! find the position of the first fluid particle
@@ -355,8 +354,8 @@ contains
        do i=1,nparticles
           ! presure is zero on the surface
           ! if (particles%is_surface(i)) cycle is mandatory for having positive definite matrix
-          
-          if (particles%is_surface(i)) cycle
+          !!!
+          if (particles%is_surface(i).or.particles%particle_type(i).eq.is_dummy) cycle
           do j=1,nparticles
              if (i.eq.j.or.distance(j,i).ge.re_lap.or.particles%particle_type(i).eq.is_dummy) cycle
              out(i) = out(i) + coef*(in(j)-in(i))*weight(distance(j,i),re_lap)
@@ -398,14 +397,13 @@ contains
 
     do i=1,nparticles
        do n=1,ndims
-          if (particles%particle_type(i).eq.is_fluid) then
-             particles%vel(i,n) = particles%vel(i,n) + particles%acc(i,n)*dt
-             particles%pos(i,n) = particles%pos(i,n) + particles%vel(i,n)*dt
-             ! particles%pos(i,n) = particles%pos(i,n) + particles%acc(i,n)*(dt**2)
-          end if
-          particles%acc(i,n) = 0.0d0
+          if (particles%particle_type(i).ne.is_fluid) cycle
+          particles%vel(i,n) = particles%vel(i,n) + particles%acc(i,n)*dt
+          particles%pos(i,n) = particles%pos(i,n) + particles%vel(i,n)*dt
        end do
     end do
+
+    particles%acc(:,:) = 0.0d0
     
   end subroutine move_particles
 
@@ -416,7 +414,6 @@ contains
     call calc_ndensity()
     call check_surface()
     call calc_source()
-    ! solve -1/rho*laplacian(p) = source for p
     call cg()
     call remove_negative_pressure()
     call calc_min_pressure()
@@ -488,6 +485,7 @@ contains
     
   end subroutine calc_a_dot_x
 
+  ! solve -1/rho*laplacian(p) = source for p
   subroutine cg()
     use params
     implicit none
@@ -587,7 +585,7 @@ contains
           particles%is_surface(i) = .true.
        end if
     end do
-    
+
   end subroutine check_surface
 
   subroutine calc_source()
@@ -635,6 +633,7 @@ contains
     use params
     implicit none
     integer::i,tstep
+    real(dp)::t
 
     do i=1,nparticles
        if (particles%particle_type(i).ne.is_fluid) cycle
@@ -651,7 +650,8 @@ contains
        call calc_pressure()
        call move_particles_by_pressure()
        if (mod(tstep,tstep_max/freq_write).eq.0) then
-          write(6,*) "tstep:",tstep
+          t = tstep*dt
+          write(6,*) "tstep,t:",tstep,t
           call write_output()
        end if
     end do
@@ -724,7 +724,7 @@ contains
 
   end subroutine write_output
 
- subroutine move_particles_by_pressure()
+  subroutine move_particles_by_pressure()
    use params
    implicit none
    real(dp),dimension(nparticles,ndims)::grad_pres
@@ -742,16 +742,21 @@ contains
       end do
    end do
 
+#ifdef _DEBUG
+   do i=1,nparticles
+      if (particles%particle_type(i).ne.is_fluid) cycle
+      write(888,"(l2,3(1pe14.5))") particles%is_surface(i),(particles%acc(i,n),n=1,3)
+   end do
+#endif
+
    do i=1,nparticles
       do n=1,ndims
-         if (particles%particle_type(i).eq.is_fluid) then
-            particles%vel(i,n) = particles%vel(i,n) + particles%acc(i,n)*dt
-            particles%pos(i,n) = particles%pos(i,n) + particles%acc(i,n)*(dt**2)
-            ! particles%pos(i,n) = particles%pos(i,n) + particles%vel(i,n)*dt
-         end if
-         particles%acc(i,n) = 0.0d0
+         if (particles%particle_type(i).ne.is_fluid) cycle
+         particles%vel(i,n) = particles%vel(i,n) + particles%acc(i,n)*dt
+         particles%pos(i,n) = particles%pos(i,n) + particles%acc(i,n)*(dt**2)
       end do
    end do
+   particles%acc(:,:) = 0.0d0
    
  end subroutine move_particles_by_pressure
   
