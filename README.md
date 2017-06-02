@@ -4,6 +4,6 @@ implementing http://li.mit.edu/Stuff/CNSE/Paper/Koshizuka96Oka.pdf
   
 TODO:  
 ---
-- still some particles are escaping from the box, find the reason  
-- do some more tests  
+- implement ICCG method and replace CG method with it
+- continue the verification
 - parallelization by OpenMP, MPI  
