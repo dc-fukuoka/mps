@@ -1,6 +1,5 @@
-*mps* - 3D incompressive fluid solver by using moving partigle semi-implicit method with Fortran. still in progress...
+*mps* - 3D incompressive fluid solver by using moving partigle semi-implicit method with Fortran.
 ======
-implementing http://li.mit.edu/Stuff/CNSE/Paper/Koshizuka96Oka.pdf  
   
 TODO:  
 ---
@@ -9,4 +8,6 @@ TODO:
 - continue the verification
 - parallelization by OpenMP, MPI  
 
+---
+water collapse
 ![Alt text](./water_collapse.gif?raw=true "water collapse")
