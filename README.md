@@ -1,7 +1,7 @@
 *mps* - 3D incompressive fluid solver by using moving partigle semi-implicit method with Fortran.
 ======
 moving particle semi-implicit(MPS) method: http://li.mit.edu/Stuff/CNSE/Paper/Koshizuka96Oka.pdf  
-currently intel compiler is required to test it.  
+currently intel compiler is required to build it.  
   
 how to run:
     
