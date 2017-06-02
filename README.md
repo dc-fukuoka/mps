@@ -1,5 +1,11 @@
 *mps* - 3D incompressive fluid solver by using moving partigle semi-implicit method with Fortran.
 ======
+intel compiler is required to test it.
+  
+how to run:  
+    $ vi mps.F90 # adjust the parameters  
+    $ make  
+    $ ./mps  
   
 TODO:  
 ---
