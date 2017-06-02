@@ -2,7 +2,8 @@
 ======
 intel compiler is required to test it.
   
-how to run:  
+how to run:
+    
     $ vi mps.F90 # adjust the parameters  
     $ make  
     $ ./mps  
