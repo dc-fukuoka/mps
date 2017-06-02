@@ -7,7 +7,8 @@ how to run:
     
     $ vi mps.F90 # adjust the parameters  
     $ make  
-    $ ./mps  
+    $ ./mps
+    $ ./create_anime.sh
   
 TODO:  
 ---
