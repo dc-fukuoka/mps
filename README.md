@@ -15,7 +15,7 @@ TODO:
 - implement ICCG method and replace CG method with it
 - create a function to find neighber particles in the effective radius(using hash table is better?)
 - continue the verification
-- parallelization by OpenMP, MPI  
+- parallelize the code by OpenMP, MPI  
 
 ---
 a calculation result(water collapse in a box) is below.  
