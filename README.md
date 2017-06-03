@@ -1,4 +1,4 @@
-*mps* - 3D incompressive fluid solver by using moving partigle semi-implicit method with Fortran.
+*mps* - 3D incompressive fluid dynamics solver by using moving particle semi-implicit(MPS) method with Fortran.
 ======
 moving particle semi-implicit(MPS) method: http://li.mit.edu/Stuff/CNSE/Paper/Koshizuka96Oka.pdf  
 currently intel compiler is required to build it.  
