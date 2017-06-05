@@ -363,7 +363,6 @@ contains
        do i=1,nparticles
           ! presure is zero on the surface
           ! if (particles%is_surface(i)) cycle is mandatory for having positive definite matrix
-          !!!
           if (particles%is_surface(i).or.particles%particle_type(i).eq.is_dummy) cycle
           do j=1,nparticles
              if (i.eq.j.or.distance(j,i).ge.re_lap.or.particles%particle_type(i).eq.is_dummy) cycle
@@ -713,13 +712,15 @@ contains
     real(dp),dimension(ndims)::vel_tmp
     real(dp)::fdt
 
-    !$omp parallel do
+    !$omp parallel
+    !$omp do
     do i=1,nparticles
        do n=1,ndims
           vel_after_col(i,n) = particles%vel(i,n)
        end do
     end do
-    !!!
+    !$omp end do
+    !$omp do private(fdt,vel_tmp)
     do i=1,nparticles
        if (particles%particle_type(i).ne.is_fluid) cycle
        do n=1,ndims
@@ -747,8 +748,8 @@ contains
           vel_after_col(i,n) = vel_tmp(n)
        end do
     end do
-
-    !$omp parallel do
+    !$omp end do
+    !$omp do
     do i=1,nparticles
        if (particles%particle_type(i).ne.is_fluid) cycle
        do n=1,ndims
@@ -756,6 +757,8 @@ contains
           particles%vel(i,n) = vel_after_col(i,n)
        end do
     end do
+    !$omp end do
+    !$omp end parallel
   end subroutine collision
 
   subroutine write_output()
