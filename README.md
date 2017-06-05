@@ -19,6 +19,6 @@ TODO:
 
 ---
 a calculation result(water collapse in a box) is below.  
-in this case, size of the box is 2.4x1.2x1.2(m), size of the water in the initial state is 1.2x1.2x1.2(m), time is 0s~1.2(s)(400 steps).  
+in this case, size of the box is 2.4x1.2x1.2(m), size of the water in the initial state is 1.2x1.2x1.2(m), time is 0~1.2(s)(400 steps).  
 it took around 6 hours, need to parallelize.  
 ![Alt text](./water_collapse.gif?raw=true "water collapse")
