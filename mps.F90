@@ -95,6 +95,8 @@ contains
     allocate(particles%is_surface(nparticles))
     allocate(particles%particle_type(nparticles))
 
+    !$omp parallel
+    !$omp workshare
     particles%pos(:,:)         = 0.0d0
     particles%vel(:,:)         = 0.0d0
     particles%acc(:,:)         = 0.0d0
@@ -104,6 +106,8 @@ contains
     particles%source(:)        = 0.0d0
     particles%is_surface(:)    = .false.
     particles%particle_type(:) = 0
+    !$omp end workshare
+    !$omp end parallel
     
   end subroutine allocate_arrays
 
@@ -241,6 +245,7 @@ contains
 #endif
 
     ! need to choose a particle that is located almost of center of the fluid, not to have low density
+    !omp parallel do reduction(+:n0_nd,n0_grad,n0_lap,lambda)
     do i=1,nparticles
        if (i.eq.n_fluid1) cycle
        n0_nd   = n0_nd   + weight(distance(i,n_fluid1),re_nd)
@@ -280,6 +285,7 @@ contains
     ! a better way is find neigher particles and only use them
     ! this calculation includes all of particles
     ! this includes all types of the particles
+    !$omp parallel do
     do i=1,nparticles
        do j=1,nparticles
           if (i.eq.j.or.distance(i,j).ge.re_nd) cycle
@@ -289,7 +295,7 @@ contains
     
   end subroutine calc_ndensity
 
-  function weight(r,re) result(res)
+  pure function weight(r,re) result(res)
     use params
     implicit none
     real(dp),intent(in)::r,re
@@ -320,6 +326,7 @@ contains
     integer::i
 
     particles%acc(:,:) = 0.0d0
+    !$omp parallel do
     do i=1,nparticles
        if (particles%particle_type(i).eq.is_fluid) then
           particles%acc(i,3) = g ! z direction
@@ -343,6 +350,7 @@ contains
     coef = 2.0d0*ndims/n0_lap/lambda
 
     if (type.eq.'v') then ! for viscosity calculation
+       !$omp parallel do
        do i=1,nparticles
           if (particles%particle_type(i).ne.is_fluid) cycle
           do j=1,nparticles
@@ -351,6 +359,7 @@ contains
           end do
        end do
     else if (type.eq.'p') then ! for pressure calculation
+       !$omp parallel do
        do i=1,nparticles
           ! presure is zero on the surface
           ! if (particles%is_surface(i)) cycle is mandatory for having positive definite matrix
@@ -380,7 +389,8 @@ contains
     do n=1,ndims
        call calc_laplacian(particles%vel(1,n),visc(1,n),'v')
     end do
-
+    
+    !$omp parallel do
     do i=1,nparticles
        if (particles%particle_type(i).ne.is_fluid) cycle
        do n=1,ndims
@@ -395,6 +405,7 @@ contains
     implicit none
     integer::i,n
 
+    !$omp parallel do
     do i=1,nparticles
        do n=1,ndims
           if (particles%particle_type(i).ne.is_fluid) cycle
@@ -425,6 +436,7 @@ contains
     implicit none
     integer::i,j
 
+    !$omp parallel do
     do i=1,nparticles
        if (particles%particle_type(i).eq.is_dummy) cycle
        particles%min_pressure(i) = particles%pressure(i)
@@ -443,6 +455,7 @@ contains
     implicit none
     integer::i
 
+    !$omp parallel do
     do i=1,nparticles
        if (particles%pressure(i).lt.0.0d0) particles%pressure(i) = 0.0d0
     end do
@@ -455,9 +468,14 @@ contains
     real(dp),dimension(nparticles,ndims),intent(out)::out
     real(dp)::coef
     integer::i,j,n
-        
+
+    !$omp parallel
+    !$omp workshare
     out(:,:) = 0.0d0
+    !$omp end workshare
+    !$omp end parallel
     coef = ndims/n0_grad
+    !$omp parallel do
     do i=1,nparticles
        if (particles%particle_type(i).ne.is_fluid) cycle
        do j=1,nparticles
@@ -479,6 +497,7 @@ contains
 
     out(:) = 0.0d0
     call calc_laplacian(in,out,'p')
+    !$omp parallel do
     do i=1,nparticles
        out(i) = -1.0d0/rho*out(i)
     end do
@@ -493,16 +512,24 @@ contains
     real(dp)::alpha,beta,r2,r_new2,b2,eps,pap
     integer::i,iter
 
+    !$omp parallel
+    !$omp workshare
     b(:) = particles%source(:)
     x(:) = b(:) ! initial guess
+    !$omp end workshare
+    !$omp end parallel
     ! x(:) = 0.0d0
 
     call calc_a_dot_x(x,ax)
-
+    !$omp parallel
+    !$omp workshare
     r(:) = b(:) - ax(:)
     p(:) = r(:)
+    !$omp end workshare
+    !$omp end parallel
 
     b2 = 0.0d0
+    !$omp parallel do reduction(+:b2)
     do i=1,nparticles
        b2 = b2 + b(i)**2
     end do
@@ -515,6 +542,7 @@ contains
        pap    = 0.0d0
        eps    = 0.0d0
        call calc_a_dot_x(p,ap)
+       !$omp parallel do reduction(+:r2,pap)
        do i=1,nparticles
           r2  = r2  + r(i)**2
           pap = pap + p(i)*ap(i)
@@ -526,6 +554,7 @@ contains
           stop
        end if
        alpha = r2/pap
+       !$omp parallel do reduction(+:r_new2)
        do i=1,nparticles
           x_new(i) = x(i)   + alpha*p(i)
           r_new(i) = r(i)   - alpha*ap(i)
@@ -553,15 +582,20 @@ contains
           stop
        end if
 
+       !$omp parallel
+       !$omp do
        do i=1,nparticles
           p_new(i) = r_new(i) + beta*p(i)
        end do
-
+       !$omp end do
+       !$omp do
        do i=1,nparticles
           x(i) = x_new(i)
           p(i) = p_new(i)
           r(i) = r_new(i)
        end do
+       !$omp end do
+       !$omp end parallel
 #ifdef _DEBUG
        if (mod(iter,10).eq.0) then
           write(6,"(a,i6,1pe14.5)") "iter,eps:",iter,eps
@@ -570,7 +604,11 @@ contains
     end do
 
     ! converged
+    !$omp parallel
+    !$omp workshare
     particles%pressure(:) = x_new(:)
+    !$omp end workshare
+    !$omp end parallel
     
   end subroutine cg
 
@@ -579,12 +617,18 @@ contains
     implicit none
     integer::i
 
+    !$omp parallel
+    !$omp workshare
     particles%is_surface(:) = .false.
+    !$omp end workshare
+    !$omp do
     do i=1,nparticles
        if (particles%ndensity(i)/n0_nd.lt.thre_nd.and.particles%particle_type(i).ne.is_dummy) then
           particles%is_surface(i) = .true.
        end if
     end do
+    !$omp end do
+    !$omp end parallel
 
   end subroutine check_surface
 
@@ -593,7 +637,11 @@ contains
     implicit none
     integer::i
 
+    !$omp parallel
+    !$omp workshare
     particles%source(:) = 0.0d0
+    !$omp end workshare
+    !$omp do
     do i=1,nparticles
        ! dummy is excluded here
        if (particles%particle_type(i).eq.is_dummy) cycle
@@ -604,6 +652,8 @@ contains
           particles%source(i) = relax_pressure*1.0d0/(dt**2)*(particles%ndensity(i)-n0_nd)/n0_nd
        end if
     end do
+    !$omp end do
+    !$omp end parallel
   end subroutine calc_source
 
   subroutine check_nan(tstep)
@@ -663,12 +713,13 @@ contains
     real(dp),dimension(ndims)::vel_tmp
     real(dp)::fdt
 
+    !$omp parallel do
     do i=1,nparticles
        do n=1,ndims
           vel_after_col(i,n) = particles%vel(i,n)
        end do
     end do
-    
+    !!!
     do i=1,nparticles
        if (particles%particle_type(i).ne.is_fluid) cycle
        do n=1,ndims
@@ -697,6 +748,7 @@ contains
        end do
     end do
 
+    !$omp parallel do
     do i=1,nparticles
        if (particles%particle_type(i).ne.is_fluid) cycle
        do n=1,ndims
@@ -726,25 +778,33 @@ contains
    real(dp),dimension(nparticles,ndims)::grad_pres
    integer::i,n
 
+   !$omp parallel
+   !$omp workshare
    grad_pres(:,:) = 0.0d0
+   !$omp end workshare
+   !$omp end parallel
    ! corrected gradient model, use minimum pressure in the effective radius
    ! this guarantees threre is no negative pressure
    call calc_gradient(particles%pressure,particles%min_pressure,grad_pres)
-   
+
+   !$omp parallel
+   !$omp do
    do i=1,nparticles
+      if (particles%particle_type(i).ne.is_fluid) cycle
       do n=1,ndims
-         if (particles%particle_type(i).ne.is_fluid) cycle
          particles%acc(i,n) = -1.0d0/rho*grad_pres(i,n)
       end do
    end do
-
+   !$omp end do
+#if 0
 #ifdef _DEBUG
    do i=1,nparticles
       if (particles%particle_type(i).ne.is_fluid) cycle
       write(888,"(l2,3(1pe14.5))") particles%is_surface(i),(particles%acc(i,n),n=1,3)
    end do
 #endif
-
+#endif
+   !$omp do
    do i=1,nparticles
       do n=1,ndims
          if (particles%particle_type(i).ne.is_fluid) cycle
@@ -752,7 +812,11 @@ contains
          particles%pos(i,n) = particles%pos(i,n) + particles%acc(i,n)*(dt**2)
       end do
    end do
+   !$omp end do
+   !$omp workshare
    particles%acc(:,:) = 0.0d0
+   !$omp end workshare
+   !$omp end parallel
    
  end subroutine move_particles_by_pressure
   

@@ -1,15 +1,16 @@
 fc       = ifort
-fppflags = -cpp
+fppflags = -cpp -D_DEBUG
 fflags   = -g -O3 -mavx
-openmp   = 
+openmp   =
 ldflags  =
 libs     =
+openmp   = -fopenmp
 src      = mps.F90
 bin      = mps
 
 all: $(bin)
 $(bin): $(src)
-	$(fc) $(fppflags) $(fflags) $^ -o $@
+	$(fc) $(fppflags) $(fflags) $(openmp) $^ -o $@
 TAGS: $(src)
 	etags $^
 tags: $(src)
