@@ -4,12 +4,13 @@
 moving particle semi-implicit(MPS) method: http://li.mit.edu/Stuff/CNSE/Paper/Koshizuka96Oka.pdf  
 currently intel compiler is required to build it.  
   
-how to run:
-    
-    $ vi mps.F90 # adjust the parameters  
-    $ make  
-    $ ./mps
-    $ ./create_anime.sh
+how to run:  
+~~~~
+$ vi mps.F90 # adjust the parameters  
+$ make  
+$ ./mps  
+$ ./create_anime.sh  
+~~~~
   
 TODO:  
 ---
