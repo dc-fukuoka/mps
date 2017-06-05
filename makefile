@@ -1,5 +1,5 @@
 fc       = ifort
-fppflags = -cpp -D_DEBUG
+fppflags = -cpp
 fflags   = -g -O3 -mavx
 openmp   = 
 ldflags  =
