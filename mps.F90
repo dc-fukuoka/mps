@@ -635,10 +635,6 @@ contains
     integer::i,tstep
     real(dp)::t
 
-    do i=1,nparticles
-       if (particles%particle_type(i).ne.is_fluid) cycle
-    end do
-
     do tstep=1,tstep_max
 #ifdef _DEBUG
        call check_nan(tstep)
