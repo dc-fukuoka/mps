@@ -15,7 +15,7 @@ $ ./create_anime.sh
 TODO:  
 ---
 - implement ICCG method and replace CG method with it
-- create a function to find neighber particles in the effective radius(using hash table is better?)
+- create a function to find neighbor particles in the effective radius(using hash table is better?)
 - continue the verification
 - parallelize the code by MPI
 

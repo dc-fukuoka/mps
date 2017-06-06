@@ -282,7 +282,7 @@ contains
 
     particles%ndensity(:) = 0.0d0
     
-    ! a better way is find neigher particles and only use them
+    ! a better way is find neighbor particles and only use them
     ! this calculation includes all of particles
     ! this includes all types of the particles
     !$omp parallel do
