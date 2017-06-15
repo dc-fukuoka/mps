@@ -325,8 +325,11 @@ contains
     implicit none
     integer::i
 
+    !$omp parallel
+    !$omp workshare
     particles%acc(:,:) = 0.0d0
-    !$omp parallel do
+    !$omp end workshare
+    !$omp do
     do i=1,nparticles
        if (particles%particle_type(i).eq.is_fluid) then
           particles%acc(i,3) = g ! z direction
@@ -334,6 +337,8 @@ contains
           particles%acc(i,:) = 0.0d0
        end if
     end do
+    !$omp end do
+    !$omp end parallel
   end subroutine calc_gravity
 
   subroutine calc_laplacian(in,out,type)
