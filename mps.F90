@@ -280,18 +280,23 @@ contains
     implicit none
     integer::i,j
 
+    !$omp parallel
+    !$omp workshare
     particles%ndensity(:) = 0.0d0
-    
-    ! a better way is find neighbor particles and only use them
+    !$omp end workshare
+
+    ! a better way is to find neighbor particles and only use them
     ! this calculation includes all of particles
     ! this includes all types of the particles
-    !$omp parallel do
+    !$omp do
     do i=1,nparticles
        do j=1,nparticles
           if (i.eq.j.or.distance(i,j).ge.re_nd) cycle
           particles%ndensity(i) = particles%ndensity(i) + weight(distance(i,j),re_nd)
        end do
     end do
+    !$omp end do
+    !$omp end parallel
     
   end subroutine calc_ndensity
 
