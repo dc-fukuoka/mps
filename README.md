@@ -30,7 +30,7 @@ tol = 1.0d-30
 dt  = 3.0d-3  
 tstep_max  = 200  
 ~~~~
-Intel(R) Xeon(R) CPU E5-2650 v3 @ 2.30GHz, 20 cores, with AVX2
+Intel(R) Xeon(R) CPU E5-2650 v3 @ 2.30GHz, 20 cores, with AVX2  
 wtih 1 core  : 4243.89s  
 with 20 cores:  434.99s  
 ---
