@@ -355,7 +355,11 @@ contains
     integer::i,j
     real(dp)::coef
 
+    !$omp parallel
+    !$omp workshare
     out(:) = 0.0d0
+    !$omp end workshare
+    !$omp end parallel
 
     coef = 2.0d0*ndims/n0_lap/lambda
 
@@ -423,7 +427,11 @@ contains
        end do
     end do
 
+    !$omp parallel
+    !$omp workshare
     particles%acc(:,:) = 0.0d0
+    !$omp end workshare
+    !$omp end parallel
     
   end subroutine move_particles
 
@@ -504,7 +512,11 @@ contains
     real(dp),dimension(nparticles),intent(inout)::out
     integer::i
 
+    !$omp parallel
+    !$omp workshare
     out(:) = 0.0d0
+    !$omp end workshare
+    !$omp end parallel
     call calc_laplacian(in,out,'p')
     !$omp parallel do
     do i=1,nparticles
