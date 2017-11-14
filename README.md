@@ -18,6 +18,7 @@ TODO:
 - create a function to find neighbor particles in the effective radius(using hash table is better?)
 - continue the verification
 - parallelize the code by MPI
+- still some particles are running away from the box, so modify the code not to calculate the escaped particles
 
 performance comparison:
 ---
