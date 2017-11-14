@@ -1,7 +1,6 @@
 fc       = ifort
 fppflags = -cpp -D_DEBUG
-fflags   = -g -O3 -mavx
-openmp   =
+fflags   = -g -O3 -march=core-avx2
 ldflags  =
 libs     =
 openmp   = -fopenmp
