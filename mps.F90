@@ -260,7 +260,7 @@ contains
   end subroutine calc_n0_and_lambda
 
   ! find the position of the first fluid particle
-  ! it is located in dence position because of the corner
+  ! it is located in dense position because of the corner
   function find_fluid_start() result(res)
     use params
     implicit none
