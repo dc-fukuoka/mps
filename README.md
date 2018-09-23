@@ -14,6 +14,8 @@ $ ./create_anime.sh
 TODO:  
 ---
 - create the animation by matplotlib
+- remove some overheads(e.g. many use of function distance())
+- use OpenACC/CUDA
 - implement ICCG method and replace CG method with it
 - create a function to find neighbor particles in the effective radius(using hash table is better?)
 - continue the verification
