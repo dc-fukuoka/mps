@@ -38,5 +38,5 @@ with 28 cores: 29.3s
 ---
 a calculation result(water collapse in a box) is below.  
 in this case, size of the box is 2.4x1.2x1.2(m), size of the water in the initial state is 0.6x1.2x1.2(m), time is 0.0~6.0(s)(2000 steps).  
-it took about 1h30m with 20 cores to calculate the process.  
+it took about 1 hour with 28 cores to calculate the process.  
 ![Alt text](./water_collapse.gif?raw=true "water collapse")
