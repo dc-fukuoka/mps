@@ -3,9 +3,9 @@ if (exist("i")==0 || i<0) i=0
 if (i%10==0) print i
 set ticslevel 0
 set view equal xyz
-set xrange [-0.5e0:2.7e0]
-set yrange [-0.5e0:1.0e0]
-set zrange [ 0.0e0:3.0e0]
+set xrange [0.0e0:2.5e0]
+set yrange [0.0e0:1.0e0]
+set zrange [0.0e0:3.0e0]
 if (i%1==0) splot "fort.999" u 1:2:3 index i ti "" pointtype 6
 #pause 0.01
 i = i+1
