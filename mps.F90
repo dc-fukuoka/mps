@@ -55,11 +55,10 @@ module params
   ! CG method parameters
 
   integer::iter_max=10000
-  real(dp)::tol = 1.0d-30 ! CG method tolerance
+  real(dp)::tol = 1.0d-10 ! CG method tolerance
 
-
-  integer::tstep_max  = 200
-  integer::freq_write = 200
+  integer::tstep_max  = 20
+  integer::freq_write = 20
   
   type particle
      real(dp),allocatable,dimension(:,:)::pos,vel,acc
