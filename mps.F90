@@ -6,9 +6,9 @@
   if (isnan(val)) then; \
      write(6,*) word," value:",val,__FILE__,":",__LINE__; \
 #ifdef __INTEL_COMPILER
-     call tracebackqq(); \
+     call tracebackqq; \
 #else
-     call backtrace(); \
+     call backtrace; \
      stop; \
   end if
 #endif
@@ -77,7 +77,7 @@ end module params
 module mysubs
 contains
 
-  subroutine calc_nparticles()
+  subroutine calc_nparticles
     use params
     implicit none
     integer::nparticles_wall_dummy
@@ -90,7 +90,7 @@ contains
     
   end subroutine calc_nparticles
 
-  subroutine allocate_arrays()
+  subroutine allocate_arrays
     use params
     implicit none
     allocate(particles%pos(nparticles,ndims))
@@ -121,7 +121,7 @@ contains
     
   end subroutine allocate_arrays
 
-  subroutine free_arrays()
+  subroutine free_arrays
     use params
     implicit none
     deallocate(particles%pos)
@@ -137,7 +137,7 @@ contains
     
   end subroutine free_arrays
 
-  subroutine set_initial_state()
+  subroutine set_initial_state
     use params
     implicit none
     integer::i,ix,iy,iz
@@ -230,9 +230,9 @@ contains
        write(6,*) "count:",count
        write(6,*) "tot_dummy+tot_wall+tot_fluid:",tot_dummy+tot_wall+tot_fluid
 #ifdef __INTEL_COMPILER
-       call tracebackqq()
+       call tracebackqq
 #else
-       call backtrace()
+       call backtrace
 #endif
        stop
     end if
@@ -243,7 +243,7 @@ contains
     
   end subroutine set_initial_state
 
-  subroutine calc_n0_and_lambda()
+  subroutine calc_n0_and_lambda
     use params
     implicit none
     integer::i
@@ -290,7 +290,7 @@ contains
     res = i
   end function find_fluid_start
 
-  subroutine calc_ndensity()
+  subroutine calc_ndensity
     use params
     implicit none
     integer::i,j
@@ -340,7 +340,7 @@ contains
                (particles%pos(i,3)-particles%pos(j,3))**2)
   end function distance
 
-  subroutine calc_gravity()
+  subroutine calc_gravity
     use params
     implicit none
     integer::i
@@ -402,9 +402,9 @@ contains
        write(6,*) "third argument of calc_laplacian() should be 'v' or 'p'."
        write(6,*) "third argument:",type
 #ifdef __INTEL_COMPILER
-       call tracebackqq()
+       call tracebackqq
 #else
-       call backtrace()
+       call backtrace
 #endif
        stop
     end if
@@ -412,7 +412,7 @@ contains
   end subroutine calc_laplacian
 
   ! calculate nu*laplacian(u)+g and substitute to acc(:,:)
-  subroutine calc_viscosity()
+  subroutine calc_viscosity
     use params
     implicit none
     integer::i,n
@@ -432,7 +432,7 @@ contains
 
   end subroutine calc_viscosity
 
-  subroutine move_particles()
+  subroutine move_particles
     use params
     implicit none
     integer::i,n
@@ -454,20 +454,20 @@ contains
     
   end subroutine move_particles
 
-  subroutine calc_pressure()
+  subroutine calc_pressure
     use params
     implicit none
 
-    call calc_ndensity()
-    call check_surface()
-    call calc_source()
-    call cg()
-    call remove_negative_pressure()
-    call calc_min_pressure()
+    call calc_ndensity
+    call check_surface
+    call calc_source
+    call cg
+    call remove_negative_pressure
+    call calc_min_pressure
     
   end subroutine calc_pressure
 
-  subroutine calc_min_pressure()
+  subroutine calc_min_pressure
     use params
     implicit none
     integer::i,j
@@ -486,7 +486,7 @@ contains
     
   end subroutine calc_min_pressure
 
-  subroutine remove_negative_pressure()
+  subroutine remove_negative_pressure
     use params
     implicit none
     integer::i
@@ -546,7 +546,7 @@ contains
   end subroutine calc_a_dot_x
 
   ! solve -1/rho*laplacian(p) = source for p
-  subroutine cg()
+  subroutine cg
     use params
     implicit none
     real(dp),dimension(nparticles)::x,ax,x_new,p,ap,p_new,r,r_new,b
@@ -592,9 +592,9 @@ contains
           write(6,*) "the matrix is not symmetric positive definite."
           write(6,*) "pap:",pap
 #ifdef __INTEL_COMPILER
-          call tracebackqq()
+          call tracebackqq
 #else
-          call backtrace()
+          call backtrace
 #endif
           stop
        end if
@@ -612,17 +612,17 @@ contains
           write(6,*) "cg method did not converge."
           write(6,*) "eps,tol:",eps,tol
 #ifdef __INTEL_COMPILER
-          call tracebackqq()
+          call tracebackqq
 #else
-          call backtrace()
+          call backtrace
 #endif
           stop
        else if (isnan(eps)) then
           write(6,*) "eps is NaN."
 #ifdef __INTEL_COMPILER        
-          call tracebackqq()
+          call tracebackqq
 #else
-          call backtrace()
+          call backtrace
 #endif
           stop
        end if
@@ -632,9 +632,9 @@ contains
        if (isnan(alpha).or.isnan(beta)) then
           write(6,*) "alpha or beta is NaN."
 #ifdef __INTEL_COMPILER
-          call tracebackqq()
+          call tracebackqq
 #else
-          call backtrace()
+          call backtrace
 #endif
           stop
        end if
@@ -669,7 +669,7 @@ contains
     
   end subroutine cg
 
-  subroutine check_surface()
+  subroutine check_surface
     use params
     implicit none
     integer::i
@@ -689,7 +689,7 @@ contains
 
   end subroutine check_surface
 
-  subroutine calc_source()
+  subroutine calc_source
     use params
     implicit none
     integer::i
@@ -724,17 +724,17 @@ contains
           if (isnan(particles%pos(i,n))) then
              write(6,*) "tstep,i,n,pos:",tstep,i,n,particles%pos(i,n)
 #ifdef __INTEL_COMPILER
-             call tracebackqq()
+             call tracebackqq
 #else
-             call backtrace()
+             call backtrace
 #endif
              stop
           else if (isnan(particles%vel(i,n))) then
              write(6,*) "tstep,i,n,vel:",tstep,i,n,particles%vel(i,n)
 #ifdef __INTEL_COMPILER
-             call tracebackqq()
+             call tracebackqq
 #else
-             call backtrace()
+             call backtrace
 #endif
              stop
           end if
@@ -744,7 +744,7 @@ contains
   end subroutine check_nan
   
   ! main routine
-  subroutine mps()
+  subroutine mps
     use params
     implicit none
     integer::i,tstep
@@ -754,23 +754,23 @@ contains
 #ifdef _DEBUG
        call check_nan(tstep)
 #endif
-       call calc_gravity()
-       call calc_viscosity()
-       call move_particles()
-       call collision()
-       call calc_pressure()
-       call move_particles_by_pressure()
+       call calc_gravity
+       call calc_viscosity
+       call move_particles
+       call collision
+       call calc_pressure
+       call move_particles_by_pressure
        if (mod(tstep,tstep_max/freq_write).eq.0) then
           t = tstep*dt
           write(6,*) "tstep,t:",tstep,t
-          call write_output()
+          call write_output
        end if
     end do
     
   end subroutine mps
 
   ! rigid body collision if two particles are very close
-  subroutine collision()
+  subroutine collision
     use params
     implicit none
     integer::i,j,n
@@ -827,7 +827,7 @@ contains
     !$omp end parallel
   end subroutine collision
 
-  subroutine write_output()
+  subroutine write_output
     use params
     implicit none
     integer::i
@@ -841,7 +841,7 @@ contains
 
   end subroutine write_output
 
-  subroutine move_particles_by_pressure()
+  subroutine move_particles_by_pressure
    use params
    implicit none
    real(dp),dimension(nparticles,ndims)::grad_pres
@@ -889,7 +889,7 @@ contains
    
  end subroutine move_particles_by_pressure
   
-  subroutine debug()
+  subroutine debug
     use params
     implicit none
     integer::i,count_fluid,count_else
@@ -931,16 +931,16 @@ program main
 #endif
   real(dp)::time,t0
 
-  call calc_nparticles()
-  call allocate_arrays()
-  call set_initial_state()
-  call calc_n0_and_lambda()
+  call calc_nparticles
+  call allocate_arrays
+  call set_initial_state
+  call calc_n0_and_lambda
   t0 = dclock()
-  call mps()
+  call mps
   time = dclock() - t0
   write(6,*) "time[s]:", time
-!  call debug()
-  call free_arrays()
+!  call debug
+  call free_arrays
   
   stop
 end program main
