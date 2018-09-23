@@ -394,7 +394,7 @@ contains
           ! if (particles%is_surface(i)) cycle is mandatory for having positive definite matrix
           if (particles%is_surface(i).or.particles%particle_type(i).eq.is_dummy) cycle
           do j=1,nparticles
-             if (i.eq.j.or.distance(j,i).ge.re_lap.or.particles%particle_type(i).eq.is_dummy) cycle
+             if (i.eq.j.or.distance(j,i).ge.re_lap.or.particles%particle_type(j).eq.is_dummy) cycle
              out(i) = out(i) + coef*(in(j)-in(i))*weight(distance(j,i),re_lap)
           end do
        end do

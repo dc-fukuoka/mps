@@ -18,4 +18,4 @@ TAGS: $(src)
 tags: $(src)
 	ctags $^
 clean:
-	rm -f $(bin) *~ *.mod fort.* core.* *.gif TAGS tags
+	rm -f $(bin) *~ *.mod fort.* core.* TAGS tags
