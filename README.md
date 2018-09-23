@@ -2,7 +2,6 @@
         the code is parallelized by OpenMP.
 ======
 moving particle semi-implicit(MPS) method: http://li.mit.edu/Stuff/CNSE/Paper/Koshizuka96Oka.pdf  
-currently intel compiler is required to build it.  
   
 how to run:  
 ~~~~
@@ -14,6 +13,7 @@ $ ./create_anime.sh
   
 TODO:  
 ---
+- add preconditioning
 - implement ICCG method and replace CG method with it
 - create a function to find neighbor particles in the effective radius(using hash table is better?)
 - continue the verification

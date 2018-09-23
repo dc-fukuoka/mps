@@ -1,12 +1,17 @@
 ! http://li.mit.edu/Stuff/CNSE/Paper/Koshizuka96Oka.pdf
 
-! NaN check
+  ! NaN check
+#if 0
 #define myassert(val, word) \
   if (isnan(val)) then; \
      write(6,*) word," value:",val,__FILE__,":",__LINE__; \
+#ifdef __INTEL_COMPILER
      call tracebackqq(); \
+#else
+     call backtrace(); \
      stop; \
   end if
+#endif
 
 module params
   implicit none
@@ -64,6 +69,9 @@ module params
   end type particle
 
   type(particle)::particles
+
+  ! diagonal precondition matrix P^{-1}, only diagonal terms
+  real(dp),allocatable,dimension(:)::pinv
 end module params
 
 module mysubs
@@ -94,6 +102,7 @@ contains
     allocate(particles%source(nparticles))
     allocate(particles%is_surface(nparticles))
     allocate(particles%particle_type(nparticles))
+    allocate(pinv(nparticles))
 
     !$omp parallel
     !$omp workshare
@@ -106,6 +115,7 @@ contains
     particles%source(:)        = 0.0d0
     particles%is_surface(:)    = .false.
     particles%particle_type(:) = 0
+    pinv(:)                    = 0.0d0
     !$omp end workshare
     !$omp end parallel
     
@@ -123,6 +133,7 @@ contains
     deallocate(particles%source)
     deallocate(particles%is_surface)
     deallocate(particles%particle_type)
+    deallocate(pinv)
     
   end subroutine free_arrays
 
@@ -218,7 +229,11 @@ contains
     if (count.ne.tot_dummy+tot_wall+tot_fluid) then
        write(6,*) "count:",count
        write(6,*) "tot_dummy+tot_wall+tot_fluid:",tot_dummy+tot_wall+tot_fluid
+#ifdef __INTEL_COMPILER
        call tracebackqq()
+#else
+       call backtrace()
+#endif
        stop
     end if
 
@@ -386,7 +401,11 @@ contains
     else
        write(6,*) "third argument of calc_laplacian() should be 'v' or 'p'."
        write(6,*) "third argument:",type
+#ifdef __INTEL_COMPILER
        call tracebackqq()
+#else
+       call backtrace()
+#endif
        stop
     end if
     
@@ -498,7 +517,8 @@ contains
        do j=1,nparticles
           if (i.eq.j.or.particles%particle_type(i).eq.is_dummy.or.distance(j,i).ge.re_grad) cycle
           do n=1,ndims
-             out(i,n) = out(i,n) + coef*(in1(j)-in2(i))*(particles%pos(j,n)-particles%pos(i,n))/(distance(j,i)**2)*weight(distance(j,i),re_grad)
+             out(i,n) = out(i,n) + &
+             coef*(in1(j)-in2(i))*(particles%pos(j,n)-particles%pos(i,n))/(distance(j,i)**2)*weight(distance(j,i),re_grad)
           end do
        end do
     end do
@@ -571,7 +591,11 @@ contains
        if (pap.le.0.0d0) then
           write(6,*) "the matrix is not symmetric positive definite."
           write(6,*) "pap:",pap
+#ifdef __INTEL_COMPILER
           call tracebackqq()
+#else
+          call backtrace()
+#endif
           stop
        end if
        alpha = r2/pap
@@ -587,11 +611,19 @@ contains
        else if (eps.gt.tol.and.iter.eq.iter_max) then
           write(6,*) "cg method did not converge."
           write(6,*) "eps,tol:",eps,tol
+#ifdef __INTEL_COMPILER
           call tracebackqq()
+#else
+          call backtrace()
+#endif
           stop
        else if (isnan(eps)) then
           write(6,*) "eps is NaN."
+#ifdef __INTEL_COMPILER        
           call tracebackqq()
+#else
+          call backtrace()
+#endif
           stop
        end if
 
@@ -599,7 +631,11 @@ contains
        
        if (isnan(alpha).or.isnan(beta)) then
           write(6,*) "alpha or beta is NaN."
+#ifdef __INTEL_COMPILER
           call tracebackqq()
+#else
+          call backtrace()
+#endif
           stop
        end if
 
@@ -687,11 +723,19 @@ contains
        do i=1,nparticles
           if (isnan(particles%pos(i,n))) then
              write(6,*) "tstep,i,n,pos:",tstep,i,n,particles%pos(i,n)
+#ifdef __INTEL_COMPILER
              call tracebackqq()
+#else
+             call backtrace()
+#endif
              stop
           else if (isnan(particles%vel(i,n))) then
              write(6,*) "tstep,i,n,vel:",tstep,i,n,particles%vel(i,n)
+#ifdef __INTEL_COMPILER
              call tracebackqq()
+#else
+             call backtrace()
+#endif
              stop
           end if
        end do
@@ -863,6 +907,18 @@ contains
     write(6,*) "count_fluid,count_else:",count_fluid,count_else
     
   end subroutine debug
+
+#ifndef __INTEL_COMPILER
+  function dclock() result(res)
+    use params
+    implicit none
+    real(dp)::res,dble
+    integer::clk,clk_rate,clk_max
+    
+    call system_clock(clk,clk_rate,clk_max)
+    res = dble(clk)/dble(clk_rate)
+  end function dclock
+#endif
   
 end module mysubs
 
@@ -870,7 +926,10 @@ program main
   use params
   use mysubs
   implicit none
-  real(dp)::dclock,time,t0
+#ifdef __INTEL_COMPILER
+  real(dp)::dclock
+#endif
+  real(dp)::time,t0
 
   call calc_nparticles()
   call allocate_arrays()

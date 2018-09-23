@@ -1,4 +1,7 @@
-fc       = ifort
+ifeq ($(FC),)
+	fc = gfortran
+endif
+fc       = $(FC)
 fppflags = -cpp -D_DEBUG
 fflags   = -g -O3 -march=core-avx2
 ldflags  =
@@ -15,4 +18,4 @@ TAGS: $(src)
 tags: $(src)
 	ctags $^
 clean:
-	rm -f $(bin) *~ *.mod core.* *.gif TAGS tags
+	rm -f $(bin) *~ *.mod fort.* core.* *.gif TAGS tags
