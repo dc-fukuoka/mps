@@ -68,9 +68,6 @@ module params
   end type particle
 
   type(particle)::particles
-
-  ! diagonal precondition matrix P^{-1}, only diagonal terms
-  real(dp),allocatable,dimension(:)::pinv
 end module params
 
 module mysubs
@@ -101,7 +98,6 @@ contains
     allocate(particles%source(nparticles))
     allocate(particles%is_surface(nparticles))
     allocate(particles%particle_type(nparticles))
-    allocate(pinv(nparticles))
 
     !$omp parallel
     !$omp workshare
@@ -114,7 +110,6 @@ contains
     particles%source(:)        = 0.0d0
     particles%is_surface(:)    = .false.
     particles%particle_type(:) = 0
-    pinv(:)                    = 0.0d0
     !$omp end workshare
     !$omp end parallel
     
@@ -132,8 +127,6 @@ contains
     deallocate(particles%source)
     deallocate(particles%is_surface)
     deallocate(particles%particle_type)
-    deallocate(pinv)
-    
   end subroutine free_arrays
 
   subroutine set_initial_state
