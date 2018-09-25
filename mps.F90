@@ -67,7 +67,7 @@ module params
      logical,allocatable,dimension(:)::is_surface
   end type particle
 
-  type(particle)::particles
+  type(particle),target::particles
 end module params
 
 module mysubs
@@ -541,13 +541,14 @@ contains
   subroutine cg
     use params
     implicit none
-    real(dp),dimension(nparticles)::x,ax,x_new,p,ap,p_new,r,r_new,b
+    real(dp),dimension(nparticles)::x,ax,x_new,p,ap,p_new,r,r_new
+    real(dp),dimension(:),pointer::b => null()
     real(dp)::alpha,beta,r2,r_new2,b2,eps,pap
     integer::i,iter
-
+    
+    b => particles%source
     !$omp parallel
     !$omp workshare
-    b(:) = particles%source(:)
     x(:) = b(:) ! initial guess
     !$omp end workshare
     !$omp end parallel
